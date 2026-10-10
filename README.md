@@ -180,7 +180,8 @@ CI 覆盖 Windows、Linux、macOS 和 Node.js 22、24，包括凭据权限及独
 Skill 使用 skill-creator 校验器检查；Skills CLI 可用 `npx skills add ./skills --list` 验证发现。
 
 真实 Cubence 单张生成作为发布前人工验收，在用户明确要求并提供凭据来源后执行。
-默认关闭自动发布；配置 npm Trusted Publisher 后才设置仓库变量 `ENABLE_RELEASE=true`。
+自动发布使用 npm Trusted Publishing，需在 npm 配置对应仓库和 `release.yml`，并允许 GitHub Actions 创建 PR。
+提交 changeset 到 `main` 后会创建或更新版本 PR；合并版本 PR 后自动发布 npm 包和 GitHub Release。
 
 需求及设计依据见
 [需求文档](https://github.com/bingwu-devkit/imgrelay/blob/main/docs/image-relay-requirements.md)、

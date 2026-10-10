@@ -14,8 +14,6 @@ permissions:
 
 jobs:
   release:
-    # 模板默认跳过发布；准备好 npm 包后设置仓库变量 ENABLE_RELEASE=true。
-    if: ${{ vars.ENABLE_RELEASE == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
