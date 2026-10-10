@@ -50,6 +50,9 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      - name: Verify Skill discovery
+        run: npx --yes skills@1.7.2 add ./skills --list
+
   test:
     name: Test (${{ matrix.os }}, Node.js ${{ matrix.node }})
     runs-on: ${{ matrix.os }}
@@ -57,7 +60,7 @@ jobs:
       fail-fast: false
       matrix:
         node: [22, 24]
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -89,7 +92,10 @@ jobs:
         run: pnpm test
 
       - name: Validate package
-        run: pnpm --filter @scope/core exec publint
+        run: pnpm --filter imgrelay exec publint
 
       - name: Run basic example
-        run: pnpm --filter @scope/example-basic start
+        run: pnpm --filter @imgrelay/example-basic start
+
+      - name: Package installation smoke test
+        run: node scripts/package-smoke.mjs

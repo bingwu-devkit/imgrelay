@@ -1,0 +1,47 @@
+{
+  "name": "imgrelay",
+  "version": "0.1.0",
+  "description": "通过统一 CLI 调用多家 OpenAI Images 兼容中转站",
+  "homepage": "https://github.com/bingwu-devkit/imgrelay#readme",
+  "bugs": "https://github.com/bingwu-devkit/imgrelay/issues",
+  "license": "MIT",
+  "author": "BINGWU2003",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bingwu-devkit/imgrelay.git",
+    "directory": "packages/cli"
+  },
+  "bin": {
+    "imgrelay": "./dist/index.mjs"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE.md"
+  ],
+  "type": "module",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "prepack": "pnpm build && publint",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@clack/prompts": "catalog:",
+    "commander": "catalog:",
+    "file-type": "catalog:",
+    "image-size": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@imgrelay/core": "workspace:*"
+  },
+  "engines": {
+    "node": "^22.20.0 || ^24.0.0"
+  }
+}

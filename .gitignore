@@ -9,3 +9,6 @@
 coverage
 dist
 node_modules
+output/imagegen/
+packages/cli/README.md
+packages/cli/LICENSE.md

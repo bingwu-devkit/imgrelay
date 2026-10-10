@@ -1,14 +1,15 @@
 {
-  "name": "@scope/core",
+  "name": "@imgrelay/core",
   "version": "0.0.0",
-  "description": "Replace this description with your library description.",
-  "homepage": "https://github.com/OWNER/REPOSITORY#readme",
-  "bugs": "https://github.com/OWNER/REPOSITORY/issues",
+  "private": true,
+  "description": "ImgRelay 配置、凭据和 OpenAI Images 调用核心",
+  "homepage": "https://github.com/bingwu-devkit/imgrelay#readme",
+  "bugs": "https://github.com/bingwu-devkit/imgrelay/issues",
   "license": "MIT",
-  "author": "YOUR_NAME",
+  "author": "BINGWU2003",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/OWNER/REPOSITORY.git",
+    "url": "git+https://github.com/bingwu-devkit/imgrelay.git",
     "directory": "packages/core"
   },
   "files": [
@@ -36,7 +37,12 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "file-type": "catalog:",
+    "image-size": "catalog:",
+    "zod": "catalog:"
+  },
   "engines": {
-    "node": "^22.18.0 || ^24.0.0"
+    "node": "^22.20.0 || ^24.0.0"
   }
 }

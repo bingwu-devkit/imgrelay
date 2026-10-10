@@ -1,5 +1,5 @@
 {
-  "name": "@scope/example-basic",
+  "name": "@imgrelay/example-basic",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -9,9 +9,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@scope/core": "workspace:*"
+    "@imgrelay/core": "workspace:*"
   },
   "engines": {
-    "node": "^22.18.0 || ^24.0.0"
+    "node": "^22.20.0 || ^24.0.0"
   }
 }

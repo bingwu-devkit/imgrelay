@@ -1,15 +1,15 @@
 {
-  "name": "starter-ts",
+  "name": "imgrelay-workspace",
   "version": "0.0.0",
   "private": true,
-  "description": "基于 Turborepo、Oxc 和 pnpm 的 TypeScript 库模板",
-  "homepage": "https://github.com/BINGWU2003/starter-ts#readme",
-  "bugs": "https://github.com/BINGWU2003/starter-ts/issues",
+  "description": "通过统一 CLI 和 Codex Skill 调用多家生图中转站",
+  "homepage": "https://github.com/bingwu-devkit/imgrelay#readme",
+  "bugs": "https://github.com/bingwu-devkit/imgrelay/issues",
   "license": "MIT",
   "author": "BINGWU2003",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/BINGWU2003/starter-ts.git"
+    "url": "git+https://github.com/bingwu-devkit/imgrelay.git"
   },
   "type": "module",
   "scripts": {
@@ -47,7 +47,7 @@
     "pre-commit": "pnpm nano-staged"
   },
   "engines": {
-    "node": "^22.18.0 || ^24.0.0",
+    "node": "^22.20.0 || ^24.0.0",
     "pnpm": "11.15.1"
   },
   "packageManager": "pnpm@11.15.1"

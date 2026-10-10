@@ -1,150 +1,191 @@
-# starter-ts
+# ImgRelay
 
-一个有明确工程取向的 TypeScript 库模板：使用 pnpm 管理 workspace，Turborepo 编排任务，
-Oxlint 负责代码检查和规则修复，Oxfmt 统一格式化仓库，tsdown 构建 ESM 包，Vitest 测试真实
-行为，Changesets 管理发布。
+通过统一 CLI 和 Codex Skill 调用多家 OpenAI Images 兼容中转站。用户级配置跨项目复用，
+生成结果默认保存在当前工作目录的 `output/imagegen/`。
 
-## 特性
+首版支持文生图、供应商与凭据管理、模型列表缓存、只读检查、原图保存和 JSON 输出。
+图片编辑、Responses、Chat Completions 与非标准异步协议属于后续范围。
 
-- Node.js ESM only，支持 Node.js 22.18+ 与 24.x
-- `packages/core`：可发布的 TypeScript 库
-- `examples/basic`：直接消费 workspace 包的最小示例
-- 根目录统一维护 Oxlint、Oxfmt 与 TypeScript 公共配置
-- 根级 Oxlint 类型感知检查与 Oxfmt 统一格式化，子包无需重复配置
-- Turborepo 本地及 CI 缓存
-- Changesets、npm Trusted Publishing 和 GitHub Release
-- Ubuntu、Windows 与 Node.js 22、24 的 CI 验证
+## 安装与开发
 
-## 从模板开始
-
-通过 GitHub 的 **Use this template** 创建仓库后，先完成以下替换：
-
-1. 将 `@scope/core` 替换为你的 npm 包名。
-2. 将 `@scope/example-basic` 替换为你的示例 workspace 名称。
-3. 将 `YOUR_NAME` 替换为你的作者名。
-4. 将 `OWNER/REPOSITORY` 替换为你的 GitHub 仓库路径。
-5. 更新根目录 `package.json` 和 `.changeset/config.json` 中的
-   `BINGWU2003/starter-ts`。
-6. 修改 `packages/core` 的描述、源码和测试。
-
-可以使用 `rg` 检查是否还有未替换的标记：
+需要 Node.js 22.20+（22.x）或 24.x。发布到 npm 后：
 
 ```bash
-rg '@scope|YOUR_NAME|OWNER/REPOSITORY|BINGWU2003/starter-ts'
+npm install -g imgrelay
+npx skills add bingwu-devkit/imgrelay --skill imgrelay --agent codex --global --copy
 ```
 
-## 目录结构
-
-```text
-.
-├─ packages/
-│  └─ core/            # 可发布库，只保留构建、测试与 TypeScript 项目配置
-├─ examples/
-│  └─ basic/           # 消费示例，只保留 TypeScript 项目配置
-├─ .npmrc              # npm/Node.js 引擎严格校验
-├─ oxlint.config.ts    # 整个仓库共享的 Oxlint 配置
-├─ oxfmt.config.ts     # 整个仓库共享的 Oxfmt 配置
-├─ tsconfig.base.json  # TypeScript 公共编译选项
-├─ tsconfig.node.json  # Node.js workspace 的 TypeScript 配置
-└─ turbo.json          # 只负责任务编排与缓存
-```
-
-Oxlint 与 Oxfmt 都直接从根目录执行并检查整个仓库，子包不提供对应的配置或 scripts。
-TypeScript 的公共选项也位于根目录，各 workspace 的 `tsconfig.json` 只声明自己的源码范围和
-必要覆盖项。构建入口、测试环境等只属于单个包的配置仍留在对应 workspace；Turbo 只编排
-构建、测试与类型检查等包级任务。
-
-## 开发
-
-需要 Node.js 22.18+ 或 24.x，以及 Corepack 提供的 pnpm 11.15.1。`.npmrc` 与
-`pnpm-workspace.yaml` 会严格校验 `package.json` 声明的 Node.js 和 pnpm 版本：
+CLI 与 Skill 分开安装；npm 安装不会改动 Codex 配置。当前源码可直接构建运行：
 
 ```bash
-corepack enable
 pnpm install
-pnpm check
-```
-
-常用命令：
-
-| 命令                | 用途                                  |
-| ------------------- | ------------------------------------- |
-| `pnpm build`        | 构建所有 workspace                    |
-| `pnpm dev`          | 以监听模式运行开发任务                |
-| `pnpm lint`         | 使用根配置检查整个仓库                |
-| `pnpm lint:fix`     | 使用根配置修复整个仓库的 lint 问题    |
-| `pnpm format`       | 使用根 Oxfmt 配置格式化整个仓库       |
-| `pnpm format:check` | 检查整个仓库的格式                    |
-| `pnpm typecheck`    | 检查所有 workspace 的 TypeScript 类型 |
-| `pnpm test`         | 运行 Vitest 测试                      |
-| `pnpm check`        | 运行提交前的完整验证                  |
-
-提交时，nano-staged 会使用根 `oxlint.config.ts` 修复暂存的 JavaScript/TypeScript 文件，再用
-根 `oxfmt.config.ts` 格式化所有匹配文件。
-
-运行消费示例：
-
-```bash
 pnpm build
-pnpm --filter @scope/example-basic start
+node packages/cli/dist/index.mjs --help
+npx skills add ./skills --skill imgrelay --agent codex --global --copy
 ```
 
-## 发布
+开发使用 pnpm 11.15.1。以下示例中的 `imgrelay` 可替换为上述 Node 命令。
 
-模板默认不启用自动发布：未设置仓库变量 `ENABLE_RELEASE=true` 时，Release workflow 的
-发布任务会跳过，不会创建版本 PR、发布 npm 包或创建 GitHub Release。CI 验证仍正常运行。
+## 首次配置
 
-### 启用自动发布
-
-从模板创建项目并替换包名、仓库信息后，按以下步骤配置：
-
-1. 首次发布需要先在本地登录 npm 并创建包，将以下命令中的包名替换为你的实际包名：
-
-   ```bash
-   pnpm --filter @your-scope/your-package publish --access public
-   ```
-
-2. 在 npm 包的 **Trusted Publisher** 设置中绑定 GitHub 仓库和工作流文件 `release.yml`。
-   工作流使用 OIDC 发布，不需要长期保存 `NPM_TOKEN`。
-3. 在 GitHub 仓库的 **Settings → Actions → General → Workflow permissions** 中启用
-   **Allow GitHub Actions to create and approve pull requests**，以便 Changesets 创建版本 PR。
-4. 在 **Settings → Secrets and variables → Actions → Variables** 中添加仓库变量
-   `ENABLE_RELEASE`，值设为 `true`。
-
-变量启用后，下次推送到 `main` 就会执行发布流程。删除变量或将值设为 `false` 可再次停用。
-
-### 日常发布
-
-面向用户的变更应先创建 changeset：
+交互式配置直接隐藏输入密钥并保存到 `config.json`，随后查询模型列表并设置默认项。
+查询失败时可手动填入模型 ID，配置流程不生成图片：
 
 ```bash
-pnpm changeset
+imgrelay provider add cubence --preset cubence
+imgrelay provider use cubence
+imgrelay doctor --provider cubence
 ```
 
-合并到 `main` 后，Release workflow 会创建或更新版本 PR。合并版本 PR 后，workflow 会构建、
-发布 npm 包，并由 Changesets 创建 GitHub Release。
-
-## Turbo 远程缓存
-
-默认只使用本地缓存。如果团队需要共享缓存，可以按需连接远程缓存：
+修改密钥同样使用交互式隐藏输入，留空保留当前密钥：
 
 ```bash
-pnpm turbo login
-pnpm turbo link
+imgrelay provider edit cubence
 ```
 
-仓库不会预设 Vercel 账户或远程缓存密钥。
+新增供应商和输入新密钥须在交互终端中运行，不加 `--json`。密钥明文保存在配置中，
+不要求以 `sk-` 开头；删除供应商会一并移除其密钥。
+非交互命令可修改已有供应商的其他参数或显式清除密钥：
 
-## 新增 workspace
+```bash
+imgrelay provider edit cubence --model vendor-model --json
+imgrelay provider edit cubence --clear-key --json
+```
 
-新增普通子包时：
+## 命令
 
-1. 让子包的 `tsconfig.json` 继承根目录 `tsconfig.node.json`，再声明自己的 `include`、
-   `rootDir` 和必要覆盖项。
-2. 按需提供 `typecheck`、`test`、`build` 等包级 scripts，Turbo 会按同名任务自动编排。
-3. 不要添加子包级 Oxlint、Oxfmt 配置或 scripts；根目录命令会自动覆盖新增 workspace。
-4. 构建入口、测试环境等局部决策留在使用方，不需要的工具不必创建配置。
+| 命令                                   | 用途                                      |
+| -------------------------------------- | ----------------------------------------- |
+| `provider add <名称>`                  | 添加供应商；可显式选择 `--preset cubence` |
+| `provider list`                        | 列出摘要及默认项                          |
+| `provider show <名称>`                 | 查看脱敏配置                              |
+| `provider edit <名称>`                 | 修改配置与凭据，`--clear-key` 清除凭据    |
+| `provider use <名称>`                  | 设置默认供应商                            |
+| `provider remove <名称>`               | 移除供应商及配置中保存的密钥              |
+| `models [--provider 名称] [--refresh]` | 查询模型或查看 15 分钟缓存                |
+| `doctor [--provider 名称]`             | 检查配置、鉴权和模型查询，不生成图片      |
+| `generate`                             | 生成并保存图片及记录                      |
+
+所有命令支持 `--json` 和 `--help`，根命令支持 `--version`。
+JSON 模式禁用交互，标准输出仅包含一个最终 JSON，进度在标准错误。
+
+## 生成图片
+
+```bash
+imgrelay generate --prompt "一只戴宇航员头盔的猫"
+imgrelay generate --prompt "一只戴宇航员头盔的猫" --provider cubence --n 2 --json
+imgrelay generate --prompt "一只戴宇航员头盔的猫" --model vendor-model --size auto --quality high --output-format png
+imgrelay generate --prompt "一只戴宇航员头盔的猫" --output-dir ./images --filename cat.png --timeout 600
+```
+
+生成时必须通过 `--prompt` 提供非空文本。CLI 原样发送内容，保留换行及首尾空白，
+不自动添加风格或约束。长提示词也通过此选项传递，按当前 shell 正确引用以保留特殊字符。
+
+单次参数覆盖不会改动持久配置。参数值按“命令 → 供应商默认 → 工具默认”合并；
+工具仅默认数量为 1，不强制尺寸、质量或格式。未知模型允许调用，模型列表缺失不阻断生成。
+
+图片保留原始字节；Base64 优先于 URL，图片下载及重定向不带 API Key。
+记录实际格式、尺寸和字节数。默认文件名包含 UUID 和序号；自定义文件名的扩展名按实际格式，
+多图追加序号。默认不覆盖文件，显式 `--overwrite` 才允许覆盖。
+
+默认生成超时为 600 秒；只读请求最多重试一次，生成 POST 不自动重试。
+超时或断网意味着结果未知，上游可能仍在生成。不会自动换模型、降参数或拆成多次付费请求。
+每张图片最多 32 MiB，上游 JSON 最多 128 MiB；某项失败后继续保存其他结果。
+
+## 中转站兼容配置
+
+同协议中转站通过 `provider add` 接入，不新增品牌客户端。
+Base URL 支持主机地址、`/v1`、自定义前缀及标准完整生成 URL，并集中处理路径拼接。
+`doctor` 展示最终地址；认证模型接口成功只证明模型查询可用，不证明生成及全部参数可用。
+
+`provider add/edit` 还支持 `--generation-path`、`--models-path`、默认生成参数、
+`--timeout` 和 `--capabilities-file`。端点覆盖仅接受路径，不能更换主机。
+能力覆盖文件是按模型 ID 索引的 JSON：
+
+```json
+{
+  "vendor-model": {
+    "source": "provider_override",
+    "parameters": {
+      "n": { "min": 1, "max": 1 },
+      "quality": { "values": ["high"] },
+      "outputFormat": { "values": ["png", "webp"] },
+      "responseFormat": { "supported": false }
+    }
+  }
+}
+```
+
+校验按“供应商覆盖 → 已知模型能力 → 上游验证”执行，显式命令参数同样受覆盖约束。
+内置 GPT Image 1/mini 的已知参数；供应商可覆盖具体差异。Cubence 预设来自需求中的一次
+成功调用，仅提供默认组合，不推断其全部能力。GPT Image 默认不发送 `response_format`；
+确需配置兼容返回格式的站点可通过供应商默认值与能力覆盖明确表达。
+
+## 配置与输出
+
+Windows、Linux 和 macOS 的配置目录统一为当前用户主目录下的 `~/.imgrelay/`。
+`IMGRELAY_CONFIG_DIR` 可覆盖目录，相对路径基于当前工作目录解析。
+
+供应商配置与明文 API Key 集中保存在版本 1 的 `config.json`，模型缓存保存在同目录的
+`models-cache.json`。文件使用系统默认权限，不做加密、专用 ACL 或权限校验。
+隐藏输入的密钥保存在供应商的 `apiKey` 字段。配置结构例如：
+
+```json
+{
+  "schemaVersion": 1,
+  "defaultProvider": "relay",
+  "providers": {
+    "relay": {
+      "protocol": "openai-images",
+      "baseUrl": "https://relay.example/v1",
+      "apiKey": "your-api-key",
+      "defaultModel": "vendor-model"
+    }
+  }
+}
+```
+
+模型缓存索引为供应商、配置修订、端点和实际凭据的 SHA-256 摘要，地址或实际凭据变化后
+不会复用旧查询。CLI 输出、日志、JSON 和生成记录保持脱敏，不保存密钥明文、鉴权头、
+原始 Base64 或带访问凭据的下载链接。图片和生成记录默认保存在当前工作目录的
+`output/imagegen/`，可通过 `--output-dir` 指定。
+生成记录含提示词及请求参数，应按本机文件管理方式处理。
+
+JSON 外层固定为 `schemaVersion`、`command`、`status`、`data`、`error`。
+生成结果的 `data.images` 包含本地路径、实际格式/尺寸/字节数，另有请求模型、上游报告模型
+（仅在返回时）、失败项、用量和 `recordPath`。使用 `error.category` 判断失败类型。
+请求提交前保存记录，单项保存失败保留其他图片，记录保存失败仍返回已保存路径。
+`data.endpoint` 是本次实际生成地址，`data.capabilityEvidence` 保留已知模型与供应商覆盖的
+来源及已有验证时间；未知能力显示为空，不从一次成功调用推断其他能力。
+
+| 退出码 | 含义                                 |
+| ------ | ------------------------------------ |
+| 0      | 成功                                 |
+| 1      | 内部错误                             |
+| 2      | 输入、配置、凭据或本地能力校验错误   |
+| 3      | 上游错误、无效图片响应或生成结果未知 |
+| 4      | 图片或记录保存失败                   |
+| 5      | 部分图片成功                         |
+| 130    | 用户中断；不能保证取消上游请求       |
+
+## 验证与发布
+
+```bash
+pnpm check
+node scripts/package-smoke.mjs
+```
+
+测试使用本地模拟中转站和真实 CLI 子进程，不消耗真实 API 额度。
+CI 覆盖 Windows、Linux、macOS 和 Node.js 22、24，包括凭据权限及独立打包安装检查。
+Skill 使用 skill-creator 校验器检查；Skills CLI 可用 `npx skills add ./skills --list` 验证发现。
+
+真实 Cubence 单张生成作为发布前人工验收，在用户明确要求并提供凭据来源后执行。
+默认关闭自动发布；配置 npm Trusted Publisher 后才设置仓库变量 `ENABLE_RELEASE=true`。
+
+需求及设计依据见
+[需求文档](https://github.com/bingwu-devkit/imgrelay/blob/main/docs/image-relay-requirements.md)、
+[兼容性参考](https://github.com/bingwu-devkit/imgrelay/blob/main/docs/provider-compatibility-design.md)。
 
 ## 许可证
 
-[MIT](./LICENSE.md)
+[MIT](./LICENSE.md)。保留模板原有版权归属。

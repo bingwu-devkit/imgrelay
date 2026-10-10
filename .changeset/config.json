@@ -5,7 +5,7 @@
   "changelog": [
     "@changesets/changelog-github",
     {
-      "repo": "BINGWU2003/starter-ts"
+      "repo": "bingwu-devkit/imgrelay"
     }
   ],
   "commit": false,
