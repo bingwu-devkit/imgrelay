@@ -1,0 +1,54 @@
+{
+  "name": "starter-ts",
+  "version": "0.0.0",
+  "private": true,
+  "description": "基于 Turborepo、Oxc 和 pnpm 的 TypeScript 库模板",
+  "homepage": "https://github.com/BINGWU2003/starter-ts#readme",
+  "bugs": "https://github.com/BINGWU2003/starter-ts/issues",
+  "license": "MIT",
+  "author": "BINGWU2003",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BINGWU2003/starter-ts.git"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "turbo run build",
+    "changeset": "changeset",
+    "check": "pnpm format:check && pnpm lint && turbo run typecheck test build",
+    "dev": "turbo run dev",
+    "format": "oxfmt -c oxfmt.config.ts --disable-nested-config . --write",
+    "format:check": "oxfmt -c oxfmt.config.ts --disable-nested-config . --check",
+    "lint": "oxlint -c oxlint.config.ts .",
+    "lint:fix": "oxlint -c oxlint.config.ts . --fix",
+    "prepare": "simple-git-hooks",
+    "release": "pnpm build && changeset publish",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "version-packages": "changeset version"
+  },
+  "devDependencies": {
+    "@changesets/changelog-github": "catalog:",
+    "@changesets/cli": "catalog:",
+    "@types/node": "catalog:",
+    "nano-staged": "catalog:",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
+    "publint": "catalog:",
+    "simple-git-hooks": "catalog:",
+    "tsdown": "catalog:",
+    "tsx": "catalog:",
+    "turbo": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm nano-staged"
+  },
+  "engines": {
+    "node": "^22.18.0 || ^24.0.0",
+    "pnpm": "11.15.1"
+  },
+  "packageManager": "pnpm@11.15.1"
+}
