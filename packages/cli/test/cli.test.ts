@@ -9,6 +9,8 @@ import { Store } from '@imgrelay/core'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { z } from 'zod'
 
+import packageJson from '../package.json' with { type: 'json' }
+
 const entry = resolve(import.meta.dirname, '../dist/index.mjs')
 const KEY = 'cli-fixture-secret-without-sk-prefix'
 const PNG =
@@ -298,7 +300,13 @@ describe('真实命令行调用', () => {
 
   it('JSON help 与 version 也保持单一 JSON 输出', async () => {
     expect((await run(['--help'])).code).toBe(0)
-    expect((await run(['--version'])).stdout).toContain('0.1.0')
+    const version = await run(['--version'])
+    expect(version.code).toBe(0)
+    expect(version.json).toMatchObject({
+      status: 'success',
+      data: { help: packageJson.version },
+      error: null,
+    })
   })
 
   it('非交互新增即使提供地址、模型和预设也需要隐藏输入密钥', async () => {
