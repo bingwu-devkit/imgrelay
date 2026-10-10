@@ -1,50 +1,90 @@
 ---
 name: imgrelay
-description: 通过本机 ImgRelay CLI 调用已配置的第三方中转站生成图片，并展示保存的原图；适用于用户指定中转站、供应商或 imgrelay 生图的请求。
+description: 通过本机 ImgRelay CLI 调用第三方 OpenAI Images 兼容中转站生成、保存并展示原图；用户指定 imgrelay、中转站或供应商生图，或查询 ImgRelay 配置与模型时使用。
 ---
 
 # ImgRelay
 
-使用 `imgrelay` CLI 管理调用和鉴权；CLI 独立安装，Skill 通过 Skills CLI 从仓库安装。
-CLI 不存在时说明安装入口 `npm install -g imgrelay`。
+使用 `imgrelay` CLI 完成配置查询、鉴权、生成和保存，通过当前环境的图片展示工具呈现本地原图。
 
-## 配置与选择
+## 理解需求与准备提示词
 
-运行 `imgrelay provider list --json` 获取非敏感摘要。使用用户明确指定的供应商和模型，
-未指定时使用本机默认项。需要详细参数时运行 `imgrelay provider show <名称> --json`。
-已有配置无需重新阅读供应商官网，不读取凭据文件或 API Key。
+用户要求生成图片时，按其主题、用途和显式约束准备提示词。对于简短描述，可补足主体、
+构图和适合用途的必要细节，不改变主题、文字内容或其他明确要求，也不固定艺术风格。
+用户明确要求原样使用提示词时，保留原文，包括换行及首尾空白。
 
-没有供应商时引导使用 `imgrelay provider add <名称>`；没有默认项时使用
-`imgrelay provider use <名称>`。密钥仅由用户在交互终端通过 `provider add/edit` 隐藏输入，
-并保存到 `config.json`；新增或输入新密钥时不加 `--json`，不在命令行写密钥内容。
-只询问配置或能力时使用 `models`、`doctor`，不生成图片。
+需求足以执行时直接生成，无需每次确认提示词。只有缺少会显著影响结果的关键信息时才提问。
+用户只查询配置、模型或能力时，使用只读命令，不发起生成。
 
-## 生成与呈现
+## 读取配置与选择供应商
 
-用户明确要求生成时，准备与其主题、用途和显式约束一致的提示词。通用入口不固定风格。
-通过 `--prompt` 直接传递非空提示词。长提示词也使用此选项，按当前 shell 正确引用
-以保留引号、换行和特殊字符：
+运行 `imgrelay provider list --json` 获取供应商、默认模型和凭据是否已配置的摘要。
+CLI 不存在时，说明安装命令 `npm install -g imgrelay`，待安装后继续。
+
+使用用户指定的供应商和模型；未指定时沿用本机默认项。需要查看默认参数或能力覆盖时，
+运行 `imgrelay provider show <名称> --json`。已有配置无需重新阅读供应商官网。
+本次选择通过生成命令传递，不为单次生图修改持久配置。
+
+- 没有供应商或缺少密钥：引导用户在交互终端运行 `imgrelay provider add <名称>` 或
+  `imgrelay provider edit <名称>`，不带 `--json`。密钥由用户隐藏输入，不在聊天或命令参数中传递，
+  不直接读取配置文件或 API Key。
+- 用户未指定供应商且没有默认项：让用户选择本次供应商；要设置持久默认项时使用
+  `imgrelay provider use <名称>`。
+- 没有默认模型且用户未指定：可用 `imgrelay models --provider <名称> --json` 查询后让用户选择，
+  也接受用户提供的模型 ID。未知模型或模型列表不可用不应阻止已明确指定模型的生成。
+
+需要诊断时使用 `imgrelay doctor --provider <名称> --json`。模型接口检查成功只证明模型查询可用，
+不能据此断言生成或全部参数已验证；无需每次生成前都运行诊断。
+
+## 调用生成并等待结果
+
+始终用 `--json` 获取机器可读结果，通过 `--prompt` 传递非空提示词：
 
 ```bash
-imgrelay generate --prompt "一只戴宇航员头盔的猫" --json
-imgrelay generate --provider demo --model vendor-model --prompt "一只戴宇航员头盔的猫" --n 2 --json
+imgrelay generate --prompt "一只戴宇航员头盔的猫，博客封面，横向构图" --json
+imgrelay generate --provider relay --model vendor-model --prompt "极简风格的森林插画" --n 2 --json
 ```
 
-通过 `--size`、`--quality`、`--output-format`、`--output-dir`、`--filename`、`--timeout`
-传递需要的显式参数；未指定的参数交由 CLI 默认配置决定。只在用户要求覆盖已有文件时
-增加 `--overwrite`。默认输出目录是当前工作目录的 `output/imagegen/`。
+按需求使用 `--size`、`--n`、`--quality`、`--output-format`、`--output-dir`、`--filename` 和
+`--timeout`；未指定的参数交由 CLI 与供应商默认配置决定。仅在用户要求覆盖已有文件时
+加 `--overwrite`。默认输出目录是当前工作目录的 `output/imagegen/`。
 
-标准输出是一个 JSON 对象，进度在标准错误。读取 `status`、`data.images[].path`、
-`data.requestedModel`、`data.provider`、实际宽高和 `data.recordPath`，通过当前环境可用的
-图片展示工具显示本地文件，并说明使用的供应商、请求模型与保存位置。
-仅当 `data.reportedModel` 存在时说明上游报告的模型；不据请求模型断言底层模型身份。
+长提示词同样通过 `--prompt` 传递，没有提示词文件或 stdin 入口。按当前 shell 正确引用参数，
+保留引号、换行和特殊字符，并避免把提示词中的内容当作 shell 命令执行。
 
-## 错误与部分结果
+CLI 标准输出包含一个最终 JSON，进度在标准错误。生成默认可等待 600 秒；执行工具返回
+“仍在运行”或会话 ID 时，继续等待同一个进程，直至结束。不要因此再次执行生成命令。
 
-根据 `error.category` 和退出码处理：2 输入/配置、3 上游失败或结果未知、4 保存失败、
-5 部分成功、130 用户中断。部分成功时展示已保存图片并说明失败项。
-读取 JSON 后再决定下一步，不把非零退出码一律理解为没有图片。
+## 读取结果并展示原图
 
-超时或断网时上游可能仍在生成；不自动重提，不切换供应商或模型，不降低参数，不追加生成。
-保存失败时使用已返回的文件路径，不能重新生图来恢复保存。不自动筛选、修图或裁剪原图。
-生成任务本身不要求修改项目代码或替换已有产品图片；按用户明确要求使用结果。
+先读取最终 JSON，再结合进程退出码判断结果；非零退出码不等于没有图片。
+`data` 可能为 `null`，先检查其是否存在，再读取 `data.images`。
+
+展示已保存的 `data.images[].path`，按需说明实际宽高、格式、供应商 `data.provider`、
+请求模型 `data.requestedModel` 和保存位置；存在 `data.recordPath` 时提供记录路径。
+仅当 `data.reportedModel` 存在时说明上游报告模型，不据请求模型断言底层模型身份。
+环境不支持展示时提供可访问的本地文件链接。
+
+实际保存数量以 `data.images.length` 为准，`requestedCount` 和 `returnedCount` 分别表示请求数量
+和上游返回条目数。上游少返回图片时说明数量差异，不自动补单。
+不自动筛选、修图或裁剪原图；按用户要求使用结果，不因生图任务自行修改项目代码或替换产品图片。
+
+## 处理失败与部分结果
+
+结合 `status`、顶层 `error.category`、`data.failures[].error` 和 `data.submissionStatus` 判断下一步：
+
+| 状态或情况                   | 处理方式                                                                             |
+| ---------------------------- | ------------------------------------------------------------------------------------ |
+| `success`                    | 展示已保存图片，说明实际保存数量                                                     |
+| `partial_success`            | 展示已有图片并说明失败项；顶层 `error` 可以为空，详情读取 `data.failures`            |
+| `error`                      | 先保留并展示已有图片，再说明错误；输入或配置错误可修正，不能静默改变用户要求         |
+| `unknown` / `result_unknown` | 说明上游可能仍在生成，停止自动重提                                                   |
+| `interrupted`                | 保留已有结果；不能保证已取消上游请求                                                 |
+| 保存失败                     | 使用已返回的图片路径；最终记录更新失败时 `recordPath` 可为空，不能靠重新生图恢复保存 |
+
+退出码：0 成功，1 内部错误，2 输入/配置/凭据或本地能力校验错误，3 上游或图片响应错误/结果未知，
+4 保存失败，5 部分成功，130 用户中断。`submissionStatus: not_submitted` 表示未提交生成请求；
+`unknown` 表示提交结果未知。同一错误类别可能发生在不同阶段，不仅凭类别推断是否已提交。
+
+超时、断网或用户中断后不自动重提；失败后不自动切换供应商或模型、不降低参数、不拆单或追加生成。
+先说明已保存结果、失败原因和可行的下一步，需要新的生成请求时由用户明确决定。
