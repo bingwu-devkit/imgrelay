@@ -16,7 +16,7 @@ node packages/cli/dist/index.mjs --help
 从本地源码安装 Skill：
 
 ```bash
-npx skills add ./skills --skill imgrelay --agent codex --global --copy
+npx skills add ./skills --skill imgrelay
 ```
 
 CLI 和 Skill 分别安装，构建不会改动 Codex 的配置。

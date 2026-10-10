@@ -14,10 +14,11 @@ ImgRelay 由 CLI 和 Codex Skill 组成：CLI 负责配置、请求和文件保�
 
 ```bash
 npm install -g imgrelay
-npx skills add bingwu-devkit/imgrelay --skill imgrelay --agent codex --global --copy
+npx skills add bingwu-devkit/imgrelay --skill imgrelay
 ```
 
-两者分开安装：npm 安装提供 `imgrelay` 命令，Skills CLI 将 Skill 安装到 Codex。
+两者分开安装：npm 安装提供 `imgrelay` 命令，Skills CLI 安装 Skill。
+按 Skills CLI 的提示选择 Codex、安装范围和安装方式。
 
 ### 2. 配置中转站
 
