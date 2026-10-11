@@ -13,6 +13,7 @@ import { z } from 'zod'
 import packageJson from '../package.json' with { type: 'json' }
 
 const entry = resolve(import.meta.dirname, '../dist/index.mjs')
+const temporaryRoot = await realpath(tmpdir())
 const KEY = 'cli-fixture-secret-without-sk-prefix'
 const PNG =
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aJf8AAAAASUVORK5CYII='
@@ -108,7 +109,7 @@ async function add(name: string, extra: string[] = []): Promise<void> {
 }
 
 beforeEach(async () => {
-  directory = await realpath(await mkdtemp(join(tmpdir(), 'imgrelay-cli-')))
+  directory = await realpath(await mkdtemp(join(temporaryRoot, 'imgrelay-cli-')))
   requests = []
   rejectAuth = false
   handler = undefined
@@ -153,7 +154,7 @@ beforeEach(async () => {
 afterEach(async () => {
   server.closeAllConnections()
   await new Promise<void>((done) => server.close(() => done()))
-  if (!resolve(directory).startsWith(join(tmpdir(), 'imgrelay-cli-')))
+  if (!directory.startsWith(join(temporaryRoot, 'imgrelay-cli-')))
     throw new Error('Unsafe cleanup path')
   await rm(directory, { recursive: true, force: true })
 })
