@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, readdir, realpath, rm, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { tmpdir } from 'node:os'
@@ -108,7 +108,7 @@ async function add(name: string, extra: string[] = []): Promise<void> {
 }
 
 beforeEach(async () => {
-  directory = await mkdtemp(join(tmpdir(), 'imgrelay-cli-'))
+  directory = await realpath(await mkdtemp(join(tmpdir(), 'imgrelay-cli-')))
   requests = []
   rejectAuth = false
   handler = undefined

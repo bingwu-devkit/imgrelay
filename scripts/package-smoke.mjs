@@ -2,14 +2,15 @@
 /* eslint-disable no-await-in-loop */
 import { execFileSync, spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, readdir, realpath, rm, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 
 const root = resolve(import.meta.dirname, '..')
-const temporary = await mkdtemp(join(tmpdir(), 'imgrelay-package space-'))
-if (!resolve(temporary).startsWith(join(tmpdir(), 'imgrelay-package space-')))
+const temporaryRoot = await realpath(tmpdir())
+const temporary = await realpath(await mkdtemp(join(temporaryRoot, 'imgrelay-package space-')))
+if (!temporary.startsWith(join(temporaryRoot, 'imgrelay-package space-')))
   throw new Error('Unsafe cleanup path')
 function resolveCommand(name) {
   if (process.platform !== 'win32') return name
