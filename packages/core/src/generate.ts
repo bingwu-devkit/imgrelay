@@ -2,22 +2,23 @@
 /* eslint-disable no-await-in-loop */
 import { randomUUID } from 'node:crypto'
 import { access, mkdir, open, unlink, writeFile } from 'node:fs/promises'
-import { basename, join, parse, resolve } from 'node:path'
+import { join, parse } from 'node:path'
 
 import { fileTypeFromBuffer } from 'file-type'
 import { imageSize } from 'image-size'
 
-import { KNOWN_MODEL_CAPABILITIES, resolveParameters } from './capabilities.js'
 import { ImgRelayError } from './errors.js'
 import type { ErrorInfo } from './errors.js'
 import { isNotFound, writeAtomic } from './files.js'
 import { MAX_IMAGE_BYTES, readBounded, requestJson } from './http.js'
-import type { ModelCapability, Parameters } from './schema.js'
+import { prepareRequest, validateRequest } from './request.js'
+import type { PromptSource, RequestDetails } from './request.js'
+import type { Parameters } from './schema.js'
 import type { Store } from './store.js'
-import { resolveEndpoint } from './urls.js'
 
 export interface GenerateOptions extends Parameters {
   prompt: string
+  promptSource?: PromptSource
   provider?: string
   model?: string
   outputDir?: string
@@ -35,16 +36,11 @@ export interface SavedImage {
   height: number
   bytes: number
 }
-export interface GenerationData {
+export interface GenerationData extends RequestDetails {
   requestId: string
-  provider: string
-  requestedModel: string
   reportedModel?: string
   requestedCount: number
   returnedCount: number
-  parameters: Parameters
-  endpoint: string
-  capabilityEvidence: { known: ModelCapability | null; provider: ModelCapability | null }
   images: SavedImage[]
   failures: { index: number; error: ErrorInfo }[]
   recordPath: string | null
@@ -135,58 +131,16 @@ function usageNumbers(value: unknown, depth = 0): unknown {
 }
 
 export async function generate(store: Store, options: GenerateOptions): Promise<GenerationOutcome> {
-  if (!options.prompt.trim()) throw new ImgRelayError('input_error', '提示词不能为空')
-  if (
-    options.timeoutSeconds !== undefined &&
-    (!Number.isFinite(options.timeoutSeconds) ||
-      options.timeoutSeconds <= 0 ||
-      options.timeoutSeconds > 2_147_483)
-  )
-    throw new ImgRelayError('input_error', '超时必须是有效的正数秒数')
-  if (
-    options.filename &&
-    (basename(options.filename) !== options.filename ||
-      /[<>:"/\\|?*]/.test(options.filename) ||
-      options.filename.split('').some((character) => character.charCodeAt(0) < 32) ||
-      !parse(options.filename).name ||
-      ['.', '..'].includes(options.filename))
-  )
-    throw new ImgRelayError('input_error', '--filename 必须是普通文件名，保存目录使用 --output-dir')
-  const selected = await store.selected(options.provider)
-  const model = (options.model || selected.provider.defaultModel || '').trim()
-  if (!model)
-    throw new ImgRelayError(
-      'config_error',
-      '未配置默认模型，请通过 --model 指定或运行 provider edit',
-    )
-  const key = await store.key(selected.provider)
-  const outputDir = resolve(options.outputDir || 'output/imagegen')
+  const prepared = await prepareRequest(store, options)
+  const { outputDir, requestedModel: model } = prepared.details
+  const key = await store.key(prepared.provider)
   const requestId = randomUUID()
   const recordPath = join(outputDir, `${requestId}-report.json`)
-  const supplied: Parameters = {}
-  for (const name of ['size', 'n', 'quality', 'outputFormat', 'responseFormat'] as const) {
-    const value = options[name]
-    if (value !== undefined) Object.assign(supplied, { [name]: value })
-  }
   const data: GenerationData = {
+    ...prepared.details,
     requestId,
-    provider: selected.name,
-    requestedModel: model,
-    requestedCount: supplied.n || selected.provider.defaults.n || 1,
+    requestedCount: prepared.details.parameters.n || 1,
     returnedCount: 0,
-    parameters: { ...selected.provider.defaults, ...supplied },
-    endpoint: resolveEndpoint(
-      selected.provider.baseUrl,
-      selected.provider.endpoints.generate || '/v1/images/generations',
-    ),
-    capabilityEvidence: {
-      known: Object.hasOwn(KNOWN_MODEL_CAPABILITIES, model)
-        ? KNOWN_MODEL_CAPABILITIES[model] || null
-        : null,
-      provider: Object.hasOwn(selected.provider.modelOverrides, model)
-        ? selected.provider.modelOverrides[model] || null
-        : null,
-    },
     images: [],
     failures: [],
     recordPath,
@@ -223,7 +177,8 @@ export async function generate(store: Store, options: GenerateOptions): Promise<
   }
   let outcome: GenerationOutcome
   try {
-    data.parameters = resolveParameters(selected.provider, model, supplied)
+    validateRequest(prepared)
+    data.parameters = prepared.details.parameters
     const body: Record<string, unknown> = { model, prompt: options.prompt }
     for (const [name, value] of Object.entries(data.parameters)) {
       const wire =
@@ -240,7 +195,7 @@ export async function generate(store: Store, options: GenerateOptions): Promise<
       redactor: store.redactor,
       method: 'POST',
       body,
-      timeoutSeconds: options.timeoutSeconds || selected.provider.timeoutSeconds,
+      timeoutSeconds: data.timeoutSeconds,
       ...(options.signal ? { signal: options.signal } : {}),
     })
     data.submissionStatus = 'result_received'

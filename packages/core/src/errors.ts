@@ -71,7 +71,13 @@ export class Redactor {
     if (Array.isArray(value)) return value.map((item) => this.value(item))
     if (value && typeof value === 'object') {
       return Object.fromEntries(
-        Object.entries(value).map(([key, item]) => [this.text(key), this.value(item)]),
+        Object.entries(value).map(([key, item]) => [
+          this.text(key),
+          // Locally computed integrity hashes must remain comparable to the caller's digest.
+          key === 'promptSha256' && typeof item === 'string' && /^[a-f0-9]{64}$/.test(item)
+            ? item
+            : this.value(item),
+        ]),
       )
     }
     return value

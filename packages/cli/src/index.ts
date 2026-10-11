@@ -1,9 +1,10 @@
 #!/usr/bin/env node
-import { doctor, generate, ImgRelayError, models, Store } from '@imgrelay/core'
+import { doctor, generate, ImgRelayError, models, previewGenerate, Store } from '@imgrelay/core'
 import type { ErrorInfo } from '@imgrelay/core'
 import { Command, CommanderError } from 'commander'
 
 import packageJson from '../package.json' with { type: 'json' }
+import { readPrompt } from './prompt.js'
 import { configureProvider, providerOptions } from './provider.js'
 import type { ProviderFlags } from './provider.js'
 
@@ -162,7 +163,10 @@ program
 program
   .command('generate')
   .description('生成图片并保存原图和记录')
-  .option('--prompt <文本>', '直接提供非空提示词（必填）')
+  .allowExcessArguments(false)
+  .option('--prompt-file <路径>', '读取 UTF-8 提示词文件，与 --prompt-stdin 互斥')
+  .option('--prompt-stdin', '从管道或重定向读取 UTF-8 提示词，与 --prompt-file 互斥')
+  .option('--dry-run', '离线预览有效请求，不联网、不写文件，无需密钥')
   .option('--provider <名称>', '本次使用的供应商')
   .option('--model <ID>', '本次使用的模型')
   .option('--size <尺寸>', '图片尺寸，如 auto 或 1024x1024')
@@ -175,7 +179,9 @@ program
   .option('--timeout <秒数>', '生成等待超时，默认 600 秒')
   .action(
     async (flags: {
-      prompt?: string
+      promptFile?: string
+      promptStdin?: boolean
+      dryRun?: boolean
       provider?: string
       model?: string
       size?: string
@@ -188,12 +194,11 @@ program
       timeout?: string
     }) => {
       const current = active('generate')
-      if (flags.prompt === undefined)
-        throw new ImgRelayError('input_error', '请通过 --prompt 提供非空提示词')
-      const result = await generate(current, {
-        prompt: flags.prompt,
-        ...(flags.provider ? { provider: flags.provider } : {}),
-        ...(flags.model ? { model: flags.model } : {}),
+      const prompt = await readPrompt(flags, controller.signal)
+      const options = {
+        ...prompt,
+        ...(flags.provider !== undefined ? { provider: flags.provider } : {}),
+        ...(flags.model !== undefined ? { model: flags.model } : {}),
         ...(flags.size !== undefined ? { size: flags.size } : {}),
         ...(flags.n !== undefined ? { n: Number(flags.n) } : {}),
         ...(flags.quality !== undefined ? { quality: flags.quality } : {}),
@@ -203,8 +208,13 @@ program
         ...(flags.timeout !== undefined ? { timeoutSeconds: Number(flags.timeout) } : {}),
         overwrite: Boolean(flags.overwrite),
         signal: controller.signal,
-        progress: (message) => process.stderr.write(`${message}\n`),
-      })
+        progress: (message: string) => process.stderr.write(`${message}\n`),
+      }
+      if (flags.dryRun) {
+        output(await previewGenerate(current, options))
+        return
+      }
+      const result = await generate(current, options)
       output(result.data, {
         status: result.status,
         exitCode: result.exitCode,
@@ -224,8 +234,20 @@ try {
     if (json) output({ help: helpOutput.trim() })
     process.exitCode = 0
   } else {
+    const removedPrompt =
+      error instanceof CommanderError &&
+      error.code === 'commander.unknownOption' &&
+      (error.message.includes("'--prompt'") || error.message.includes("'--prompt="))
+    if (removedPrompt) commandName = 'generate'
     const failure =
-      error instanceof CommanderError ? new ImgRelayError('input_error', error.message) : error
+      error instanceof CommanderError
+        ? new ImgRelayError(
+            'input_error',
+            removedPrompt
+              ? '--prompt 已移除，请改用 --prompt-file <路径> 或 --prompt-stdin'
+              : error.message,
+          )
+        : error
     const info: ErrorInfo = store
       ? store.redactor.error(failure)
       : {

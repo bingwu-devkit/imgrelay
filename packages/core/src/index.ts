@@ -2,6 +2,8 @@ export { ImgRelayError, Redactor } from './errors.js'
 export type { ErrorCategory, ErrorInfo } from './errors.js'
 export { generate } from './generate.js'
 export type { GenerateOptions, GenerationData, GenerationOutcome, SavedImage } from './generate.js'
+export { previewGenerate } from './request.js'
+export type { GenerationPreview, PromptSource, RequestDetails } from './request.js'
 export { discoverModels, doctor, models } from './models.js'
 export type { ModelList } from './models.js'
 export {

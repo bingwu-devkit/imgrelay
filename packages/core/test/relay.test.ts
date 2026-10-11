@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { chmod, mkdir, mkdtemp, readFile, readdir, rm, unlink, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'
@@ -290,6 +291,20 @@ describe('模型发现与兼容', () => {
 })
 
 describe('生成与恢复规则', () => {
+  it('原始提示词摘要不因恰好含有配置密钥片段而被脱敏改写', async () => {
+    const prompt = '保持请求摘要一致\n中文 😀\n'
+    const digest = createHash('sha256').update(prompt).digest('hex')
+    await add('relay', { apiKey: digest.slice(0, 16) })
+    const result = await generate(store, { prompt, outputDir: join(directory, 'images') })
+    expect(result.exitCode).toBe(0)
+    expect(store.redactor.value(result.data)).toMatchObject({ promptSha256: digest })
+    if (!result.data.recordPath) throw new Error('Missing generation record')
+    expect(JSON.parse(await readFile(result.data.recordPath, 'utf8')) as unknown).toMatchObject({
+      promptSha256: digest,
+    })
+    expect(seen[0]?.body.prompt).toBe(prompt)
+  })
+
   it('混合多图保留成功项，Base64 优先，跨域及重定向下载不带 Key', async () => {
     await add('relay', { defaults: { quality: 'low', outputFormat: 'jpeg' } })
     const downloadAuth: (string | undefined)[] = []

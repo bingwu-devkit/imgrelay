@@ -38,19 +38,35 @@ CLI 不存在时，说明安装命令 `npm install -g imgrelay`，待安装后�
 
 ## 调用生成并等待结果
 
-始终用 `--json` 获取机器可读结果，通过 `--prompt` 传递非空提示词：
+始终用 `--json` 获取机器可读结果。将准备好的原文写入 UTF-8 文件，用 `--prompt-file` 传递；
+也可通过不改变字节的管道和 `--prompt-stdin` 输入。两者互斥，CLI 已移除 `--prompt`。
+首次使用本机 CLI 时查看 `imgrelay generate --help --json`，确认这些入口及 `--dry-run` 可用；
+旧版本缺少入口时说明需升级，不假定新增选项已经安装。
 
 ```bash
-imgrelay generate --prompt "一只戴宇航员头盔的猫，博客封面，横向构图" --json
-imgrelay generate --provider relay --model vendor-model --prompt "极简风格的森林插画" --n 2 --json
+imgrelay generate --prompt-file ./prompt.txt --dry-run --json
+imgrelay generate --prompt-file ./prompt.txt --json
+imgrelay generate --provider relay --model vendor-model --prompt-file ./prompt.txt --n 2 --json
 ```
 
 按需求使用 `--size`、`--n`、`--quality`、`--output-format`、`--output-dir`、`--filename` 和
 `--timeout`；未指定的参数交由 CLI 与供应商默认配置决定。仅在用户要求覆盖已有文件时
 加 `--overwrite`。默认输出目录是当前工作目录的 `output/imagegen/`。
 
-长提示词同样通过 `--prompt` 传递，没有提示词文件或 stdin 入口。按当前 shell 正确引用参数，
-保留引号、换行和特殊字符，并避免把提示词中的内容当作 shell 命令执行。
+Windows 下优先使用文件入口，让 `.cmd/.bat` 只转发路径与选项。写入文件时保留原文的引号、
+换行、空行和首尾空白，不将完整提示词拼成 shell 命令，也不使用 `JSON.stringify()` 充当 shell 引用。
+CLI 严格读取 UTF-8，去除开头一个编码 BOM，其余文本原样保留；不要用会添加换行的文本管道替代精确文件输入。
+
+首次提交前用 `--dry-run --json` 离线核对实际输入和参数，不联网、不写记录，也无需密钥。
+从准备好的原始字符串计算 UTF-8 SHA-256、UTF-16 字符数和 UTF-8 字节数，与预览中的
+`promptSha256`、`promptCharacters`、`promptUtf8Bytes` 比较，并确认供应商、模型、生成参数、
+输出目录和文件名。预览成功不等于内容与预期一致；不匹配时修正本地调用，不提交生成。
+
+同一调用路径的一批请求，先核对第一份正式结果的摘要及关键参数，再继续其余请求。
+记录中的提示词全文可能被脱敏，摘要来自实际发送的原文，不能仅以记录文本相等作为完整性判据。
+若摘要或参数不匹配，保留已有图片和记录，停止尚未提交的同类调用，跟踪已提交请求；
+解释调用错误，需要重新生成时由用户明确决定，不通过换模型或自动重抽处理。
+用户要求逐张生成时，上一请求结束后才提交下一请求。
 
 CLI 标准输出包含一个最终 JSON，进度在标准错误。生成默认可等待 600 秒；执行工具返回
 “仍在运行”或会话 ID 时，继续等待同一个进程，直至结束。不要因此再次执行生成命令。
