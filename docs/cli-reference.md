@@ -198,7 +198,8 @@ imgrelay generate --prompt-file ./prompt.txt --output-dir ./images --json
 | `interrupted`     | 命令被中断，先检查已有结果                        |
 
 `data.submissionStatus` 为 `not_submitted` 时，请求尚未提交；为 `unknown` 时，提交结果未知。
-输入或配置错误可能返回 `data: null`；生成记录保存失败时，`data.recordPath` 可能为空。
+读取提示词或离线预览失败时，`data` 可仅包含 `submissionStatus: not_submitted`，没有图片或摘要字段。
+其他输入或配置错误仍可能返回 `data: null`；生成记录保存失败时，`data.recordPath` 可能为空。
 
 | 退出码 | 含义                             |
 | ------ | -------------------------------- |
