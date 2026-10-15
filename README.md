@@ -137,3 +137,7 @@ imgrelay generate --prompt-file ./prompt.txt --dry-run --json
 ## 许可证
 
 [MIT](./LICENSE.md)。
+
+## 友情链接
+
+https://linux.do
