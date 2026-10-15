@@ -1,5 +1,13 @@
 # imgrelay
 
+## 0.3.1
+
+### Patch Changes
+
+- [#10](https://github.com/bingwu-devkit/imgrelay/pull/10) [`2b7f13b`](https://github.com/bingwu-devkit/imgrelay/commit/2b7f13b70ea7677c80912a87156079ceabe1219e) Thanks [@BINGWU2003](https://github.com/BINGWU2003)! - 修复提示词读取和离线预览失败时缺少提交状态的问题，返回 `submissionStatus: not_submitted`，便于调用方在确认未提交后修正本地错误。超时和断网继续保留结果未知状态，不自动重提请求。
+
+  完善配套 Skill：仅支持用户主动调用，拆分 CLI 与结果处理参考，新增提示词完整性校验脚本，并明确批次预览和重试边界。
+
 ## 0.3.0
 
 ### Minor Changes

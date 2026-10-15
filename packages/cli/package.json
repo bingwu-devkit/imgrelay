@@ -1,6 +1,6 @@
 {
   "name": "imgrelay",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "通过统一 CLI 调用多家 OpenAI Images 兼容中转站",
   "homepage": "https://github.com/bingwu-devkit/imgrelay#readme",
   "bugs": "https://github.com/bingwu-devkit/imgrelay/issues",
