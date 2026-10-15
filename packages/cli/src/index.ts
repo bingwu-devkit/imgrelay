@@ -16,6 +16,8 @@ let commandName = 'imgrelay'
 let outputWritten = false
 let helpOutput = ''
 let store: Store | undefined
+// Only true while the generate action is still in the CLI's offline preparation phase.
+let generationNotSubmitted = false
 
 function output(
   data: unknown,
@@ -194,6 +196,7 @@ program
       timeout?: string
     }) => {
       const current = active('generate')
+      generationNotSubmitted = true
       const prompt = await readPrompt(flags, controller.signal)
       const options = {
         ...prompt,
@@ -214,6 +217,7 @@ program
         output(await previewGenerate(current, options))
         return
       }
+      generationNotSubmitted = false
       const result = await generate(current, options)
       output(result.data, {
         status: result.status,
@@ -254,7 +258,7 @@ try {
           category: failure instanceof ImgRelayError ? failure.category : 'internal_error',
           message: failure instanceof Error ? failure.message : '发生未知错误',
         }
-    output(null, {
+    output(generationNotSubmitted ? { submissionStatus: 'not_submitted' } : null, {
       status: info.category === 'interrupted' ? 'interrupted' : 'error',
       exitCode: failure instanceof ImgRelayError ? failure.exitCode : 1,
       error: info,

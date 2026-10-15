@@ -228,10 +228,12 @@ describe('真实命令行调用', () => {
       runPrompt(' \r\n\t'),
       run(['generate', '--prompt-stdin'], Buffer.from([0xc3, 0x28])),
     ])
-    for (const result of results) {
+    for (const [index, result] of results.entries()) {
       expect(result.code).toBe(2)
       expect(result.json.error?.category).toBe('input_error')
-      expect(result.json.data).toBeNull()
+      // Parser errors occur before the action; prompt reading errors have an explicit phase.
+      const expectedData = index === 1 || index === 7 ? null : { submissionStatus: 'not_submitted' }
+      expect(result.json.data).toEqual(expectedData)
     }
     expect(requests).toHaveLength(0)
     await expect(readdir(join(directory, 'output'))).rejects.toMatchObject({ code: 'ENOENT' })
@@ -439,7 +441,7 @@ describe('真实命令行调用', () => {
     const result = await runPrompt('test', ['--dry-run', ...args])
     expect(result.code).toBe(2)
     expect(result.json.status).toBe('error')
-    expect(result.json.data).toBeNull()
+    expect(result.json.data).toEqual({ submissionStatus: 'not_submitted' })
     expect(requests).toHaveLength(0)
     expect(await readdir(join(directory, 'config'))).toEqual(['config.json'])
     await expect(readdir(join(directory, 'output'))).rejects.toMatchObject({ code: 'ENOENT' })
@@ -713,10 +715,12 @@ describe('真实命令行调用', () => {
     const timedOut = await runPrompt('test', ['--timeout', '0.05'])
     expect(timedOut.code).toBe(3)
     expect(timedOut.json.status).toBe('unknown')
+    expect(timedOut.json.data?.submissionStatus).toBe('unknown')
     expect(requests).toHaveLength(1)
     handler = (_request, response) => response.destroy()
     const disconnected = await runPrompt('test')
     expect(disconnected.json.error?.category).toBe('result_unknown')
+    expect(disconnected.json.data?.submissionStatus).toBe('unknown')
     expect(requests).toHaveLength(2)
   })
 
