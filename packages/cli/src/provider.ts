@@ -53,6 +53,41 @@ export function providerOptions(command: Command): Command {
     .option('--timeout <秒数>', '默认生成超时')
 }
 
+export async function listProviders(store: Store, interactive: boolean, signal: AbortSignal) {
+  let config = await store.config()
+  const entries = Object.entries(config.providers)
+  if (interactive && entries.length) {
+    const selected = await prompts.select({
+      message: '选择默认供应商',
+      ...(config.defaultProvider ? { initialValue: config.defaultProvider } : {}),
+      options: entries.map(([name, entry]) => ({
+        value: name,
+        label: store.redactor.text(
+          `${name}${name === config.defaultProvider ? '（当前默认）' : ''}`,
+        ),
+        hint: store.redactor.text(`${entry.defaultModel || '未设置默认模型'} · ${entry.baseUrl}`),
+      })),
+      signal,
+    })
+    if (typeof selected === 'symbol' || signal.aborted)
+      throw new ImgRelayError('interrupted', '用户取消选择，默认供应商未更改', 130)
+    if (selected !== config.defaultProvider) await store.use(selected)
+    config = await store.config()
+    prompts.outro(store.redactor.text(`默认供应商：${config.defaultProvider}`))
+  }
+  return {
+    defaultProvider: config.defaultProvider || null,
+    providers: Object.entries(config.providers).map(([name, entry]) => ({
+      name,
+      protocol: entry.protocol,
+      baseUrl: entry.baseUrl,
+      defaultModel: entry.defaultModel || null,
+      credentialSource: entry.apiKey ? 'config' : null,
+      default: name === config.defaultProvider,
+    })),
+  }
+}
+
 export async function configureProvider(
   store: Store,
   name: string,
