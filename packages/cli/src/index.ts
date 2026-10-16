@@ -5,7 +5,7 @@ import { Command, CommanderError } from 'commander'
 
 import packageJson from '../package.json' with { type: 'json' }
 import { readPrompt } from './prompt.js'
-import { configureProvider, providerOptions } from './provider.js'
+import { configureProvider, listProviders, providerOptions } from './provider.js'
 import type { ProviderFlags } from './provider.js'
 
 const json = process.argv.includes('--json')
@@ -100,21 +100,16 @@ providerOptions(provider.command('edit <名称>').description('修改供应商')
 )
 provider
   .command('list')
-  .description('列出供应商摘要')
+  .description('列出供应商，交互选择默认供应商')
   .action(async () => {
     const current = active('provider list')
-    const config = await current.config()
-    output({
-      defaultProvider: config.defaultProvider || null,
-      providers: Object.entries(config.providers).map(([name, entry]) => ({
-        name,
-        protocol: entry.protocol,
-        baseUrl: entry.baseUrl,
-        defaultModel: entry.defaultModel || null,
-        credentialSource: entry.apiKey ? 'config' : null,
-        default: name === config.defaultProvider,
-      })),
-    })
+    output(
+      await listProviders(
+        current,
+        !json && process.stdin.isTTY && process.stdout.isTTY,
+        controller.signal,
+      ),
+    )
   })
 provider
   .command('show <名称>')

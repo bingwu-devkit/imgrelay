@@ -103,7 +103,7 @@ imgrelay generate --prompt-file ./prompt.txt --dry-run --json
 
 | 常用命令                           | 用途                           |
 | ---------------------------------- | ------------------------------ |
-| `imgrelay provider list`           | 查看供应商和默认项             |
+| `imgrelay provider list`           | 查看并交互选择默认供应商       |
 | `imgrelay provider show relay`     | 查看供应商配置                 |
 | `imgrelay provider edit relay`     | 修改地址、密钥、模型和默认参数 |
 | `imgrelay provider use relay`      | 切换默认供应商                 |
@@ -112,6 +112,9 @@ imgrelay generate --prompt-file ./prompt.txt --dry-run --json
 
 命令后加 `--help` 可查看完整选项。需要在脚本中读取结果时加 `--json`；
 添加供应商和更新密钥时，使用上表中的交互命令。
+
+在终端运行 `imgrelay provider list`，按上下键选择、回车设为默认供应商，当前默认项会预选并标记。
+按 Esc 或 Ctrl+C 取消，不修改配置。加 `--json` 或通过管道调用时只输出列表。
 
 ## 常见问题
 
